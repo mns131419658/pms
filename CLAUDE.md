@@ -12,8 +12,10 @@
 | `src/util.js` | 型別轉換、權限中介層、關聯名稱查詢、scrypt 密碼雜湊 |
 | `src/seed.js` | 首次啟動建立管理者與八組下拉清單預設值 |
 | `src/routes/*.js` | 各模組 API，依模組拆檔 |
+| `src/googleDrive.js` | 純 fetch 呼叫 Google Drive REST API 上傳備份，不引入 googleapis 套件 |
 | `public/` | 前端。原生 JS 單頁應用，未經打包，可直接搜尋與修改 |
 | `data/` | 執行時產生，不在版控內 |
+| `get-token.js` | 一次性工具：本機執行取得 Google 的 refresh token，不在版控內 |
 
 無原生模組、無絕對路徑，只依賴 `express` 與 `express-session`。
 
@@ -55,6 +57,10 @@
 - **支票到期提醒不看付款狀態**——遠期支票一定已登錄為「已付款」，錢是到期日才扣。
 - **首頁熱區** `HOME_SPOTS` 是對準 `public/img/home.png` 的百分比座標，
   換圖必須同步檢查，否則點擊區會錯位。
+- **自動備份 (`POST /api/admin/backup-now`) 不能只靠 `server.js` 裡的內部計時器**：
+  部署在 Render 免費方案時，服務閒置會睡著，睡著時計時器不會觸發。
+  主要觸發來源是外部排程服務 (如 cron-job.org) 定時呼叫這支 API，
+  帶 `X-Backup-Secret` 標頭而非登入 session；內部計時器只是「行程剛好醒著」時的保險，別以為它一定會準時跑。
 
 ## 環境相依的注意事項
 

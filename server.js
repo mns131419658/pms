@@ -144,3 +144,23 @@ app.listen(PORT, () => {
   console.log(`  資料：${store.DATA_FILE}`);
   console.log('');
 });
+
+/* ── 排程備份 (每週五 20:00 台北時間) ──
+   這只是行程持續存活時的保險；服務若因閒置睡著 (如 Render 免費方案)，
+   計時器不會在睡著時觸發，主要還是靠外部排程服務呼叫 /api/admin/backup-now。
+   每分鐘檢查一次，用 lastRun 記錄「今天有沒有跑過」避免同一分鐘內重複觸發。 */
+let lastBackupRunDate = null;
+setInterval(() => {
+  if (!require('./src/googleDrive').isConfigured()) return;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Taipei', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date());
+  const get = (t) => parts.find(p => p.type === t).value;
+  const dateKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
+  if (get('weekday') === 'Fri' && get('hour') === '20' && get('minute') === '00' && lastBackupRunDate !== dateKey) {
+    lastBackupRunDate = dateKey;
+    require('./src/routes/admin').runBackup()
+      .then(f => console.log('  [排程備份] 已上傳：' + f.name))
+      .catch(e => console.error('  [排程備份] 失敗：' + e.message));
+  }
+}, 60 * 1000);

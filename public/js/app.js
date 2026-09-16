@@ -2863,6 +2863,15 @@ MODULES.restore = {
   render() {
     clearTopAction();
     document.getElementById('content').innerHTML = `
+      <div class="card" style="padding:22px;max-width:660px;margin-bottom:16px">
+        <div style="font-weight:700;font-size:16px;margin-bottom:10px">☁️ 雲端硬碟自動備份</div>
+        <div class="hint" style="line-height:1.7;margin-bottom:12px">
+          系統會依排程自動把資料庫匯出並上傳到你設定的 Google 雲端硬碟資料夾。<br>
+          按下面按鈕可以手動立即備份一次，用來確認雲端硬碟設定是否正確。
+        </div>
+        <button class="btn" id="backupNowBtn">立即備份到雲端硬碟</button>
+        <div class="hint" id="backupMsg" style="margin-top:10px"></div>
+      </div>
       <div class="card" style="padding:22px;max-width:660px">
         <div style="color:var(--danger);font-weight:700;font-size:17px;margin-bottom:10px">⚠️ 系統還原（危險操作）</div>
         <div class="hint" style="line-height:1.7;margin-bottom:16px">
@@ -2878,6 +2887,21 @@ MODULES.restore = {
         <div class="hint" id="restoreMsg" style="margin-top:12px"></div>
       </div>`;
     document.getElementById('restoreBtn').onclick = () => this.doRestore();
+    document.getElementById('backupNowBtn').onclick = () => this.backupNow();
+  },
+  async backupNow() {
+    const btn = document.getElementById('backupNowBtn');
+    const msg = document.getElementById('backupMsg');
+    btn.disabled = true; btn.textContent = '備份中...';
+    msg.textContent = '';
+    try {
+      const r = await api('/api/admin/backup-now', { method: 'POST' });
+      msg.innerHTML = `<span style="color:var(--success)">✓ 已上傳：${esc(r.name)}</span>`;
+    } catch (e) {
+      msg.innerHTML = `<span style="color:var(--danger)">${esc(e.message)}</span>`;
+    } finally {
+      btn.disabled = false; btn.textContent = '立即備份到雲端硬碟';
+    }
   },
   async doRestore() {
     const fileInput = document.getElementById('restoreFile');
